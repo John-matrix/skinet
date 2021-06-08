@@ -1,0 +1,1085 @@
+E-commerce .net and angular course
+
+Note * means that part could be done in the begining.
+Note *** means that I started writing notes correctly from that point onwards.
+Also have the code of the whole project with these steps as a reference.
+REMEMBER to use the code in the github repository for reference as well. It is better.
+
+
+SECTION 2 - API BASICS 
+5. Introduction
+
+6. Creating the Web API project
+	Create a web api project.
+	Create a solution file and add the web api project to the solution file.
+
+7. Running the API using the DotNet CLI
+
+8. Reviewing the Web API startup files
+
+9. Adding out first API Controller
+
+10. Adding a C# Entity class
+
+11. Setting up Entity Framework
+
+12. Adding a connection string
+	Add connection string to the appsettings.Development.json.
+	Add the StoreContext as a service using the connection string.
+	Change how the configuration property in the startup class is used.
+
+13. Adding an Entity Framework migration
+	Add dotnet entity framework tools. This is a global tool. Use your browser and go to nuget.org/packages/dotnet-ef/ .
+	You can also update the entity framework tools.
+	Add a migration. Put the Migrations folder in the Data folder.	
+
+14. Updating the database
+	Update the database.
+	Use sqlite explorer to view the database and the tables.
+	Add a small amount of data to the database using the New Query in the sqlite explorer.
+
+15. Reading the data from the Database in the API
+	Inject the StoreContext into the controller and return the values from the database.
+	Remember to use linq queries.
+	Remember to return ActionResult.
+	Remember to use async code and task.
+
+16. Postman Collections
+	Use postman collections for testing the API.
+	Try to create postman collections of your own.
+
+17. Creating the additional projects *
+	Create two new projects of type class library not web api.
+	One for Core and one for Infrastructure.
+	Add the two projects to the solution.
+	Add references to projects.
+	Run dotnet restore command in the solution folder so that the references are registered and available inside the solution.
+	Move the Entities folder into the Core Project. Move the Data folder into the Infrastructure project.
+	Check and correct namespaces.
+	May have to move packages from one csproj file to another csproj file.
+	Correct any errors.
+	Run the dotnet build command in the solution folder.
+	Test that the app is running correctly.
+	*May be easier to this step in the begining.
+
+18. Saving our project into source control using Git and GitHub
+	Run the git init command in the solution folder.
+	Add a .gitignore file in the solution folder.
+	Add *.db, obj, bin and appsettings.json into the .gitignore file. (number of changes should drop). (If its a public repository).
+	Remove the "class1.cs" files from the projects (house keeping).
+	Commit changes.
+	Create a new repository in your github account.
+	Copy the git remote...etc command and run it in the solution folder.
+	Push changes to github.
+
+SECTION 3 - API ARCHITECTURE
+20. Introduction
+
+21. The Repository Pattern
+	
+22. Adding a Repository and Interface
+	Create an IProductRepository interface and a ProductRepository class.
+	Add them to the startup class as a scoped service in the ConfigureServices method.
+
+23. Adding the repository methods
+	Implement the methods in the ProductRepository class.
+	Add them to the ProductController.
+	Test the application.
+
+24. Extending the products entity and creating related entities
+	Create a class in the Entity folder called BaseEntity.
+	Other classes will inherit from this class.
+	Add more properties to the Product Entity.
+	Add the entities ProductType and ProductBrand. (inherit from the BaseEntity).
+	Add the ProductType and ProductBrand DbSets to the StoreContext.
+	Remember EntityFramework relationships when adding properties.
+
+25. Creating a new migration for the entities
+	Because there is more than one project, dropping and adding migrations is different.
+	For dropping a database you must be in the solution folder. You have to specify the project where the store context is
+		available (Infrastructure project) and also need to specify the startup project as well (API project). Here is
+		an example: dotnet ef database drop -p Infrastructure -s API
+	To remove a migration is similar to the dropping a database. Here is an example
+		dotnet ef migrations remove -p Infrastructure -s API
+	To add a migration is similar to removing a migration. Here is an example
+		dotnet ef migrations add InitialCreate -p Infrastructure -s API -o Data/Migrations
+	When looking at a migration, check to see which columns must be null or not, and the onDelete action.
+
+26. Configuring the migrations
+	Create a new folder called Config in the Data folder.
+	Add a class called ProductConfiguration in the Config folder.
+	Add the IEntityTypeConfiguration<Product> interface and implement. (configure properties).
+	Override the OnModelCreating method in the StoreContext class.
+	Configure the OnModelCreating method to apply the changes in the ProductConfiguration class.
+	Remove the previous migration and then add the new one.
+	Becareful when using strings. Its easy to make a mistake.
+
+27. Applying the migrations and creating the Database at app startup
+	Modify the main method. Don't forget to use the using statement.
+	Use try catch block.
+
+28. Adding Seed data
+	Its easier to work with data in json format then csv.
+	There are online csv to json converters.
+	Create a folder called SeedData in the Data folder for the seed data in json format.
+	Create a class called StoreContextSeed.
+	Create a static method in the StoreContextSeed class that will be used in the program class.
+	Use the static method in the Program class.
+
+29. Adding the code to get the product brands and types
+	Add the code in the product repository for now.
+	Then add them in the controller and test.
+
+30. Eager loading of navigation properties
+	Add the include query with the navigation property you want to return with the context.
+
+SECTION 4 - API GENERIC REPOSITORY *
+32. Introduction
+
+33. Creating a Generic repository<T> and interface<T> *
+	Create a interface called IGenericRepository and a class called GenericRepository.
+	Add them as a service in the startup class in the following way:
+		services.AddScoped(typeof(IGenericRepository<>), (typeof(GenericRepository<>)));
+
+34. Implementing the methods in the Generic repository *
+	Implement the methods in the Generic repository.
+	Modify the ProductsController to use three IGenericRepository.
+	Test on postman.
+
+35. Introduction to the specification pattern *
+	
+36. Creating a specification class *
+	Create a new folder in the Core project called Specifications.
+	Create an interface called ISpecification<T> in the Specifications folder.
+	Create a class called BaseSpecification<T> add the ISpecification<T> to it.
+	Implement the methods in the BaseSpecification<T> class.
+
+37. Creating a specification evaluator *
+	Create a class called SpecificationEvaluator<TEntity> where TEntity : BaseEntity, in the Data folder (Infrastructure).
+	Implement the methods in the SpecificationEvaluator class.
+	Add the GetEntityWithSpec and the ListAsync methods in the IGenericRepository interface.
+
+38. Implementing the repository with specification methods *
+	Implement the methods in the GenericRepository.
+	Add a private ApplySpecification method in the GenericRepository.
+
+39. Using the specification methods in the controller *
+	Create a class called ProductsWithTypesAndBrandsSpecification in the Specification folder (Core project).
+	Add the BaseSpecification class to it with type product (inherit).
+	Add a default constructor to the BaseSpecification class.
+	Use the ProductsWithTypesAndBrandsSpecification in the ProductsController class.
+
+40. Using the specification methods in the controller *
+	
+41. Using the Debugger to view the spec pattern in action
+	Select the breakpoint.
+	Select the debugging tab.
+	Select .Net Core Attach at the top.
+	Click the play button.
+	Search for API.exe and select it.
+
+42. Shaping the data to return with DTOs
+	Create a folder called Dtos in the API project.
+	Add a class called ProductToReturnDto in the Dtos folder.
+	Use the ProductToReturnDto in the Controller folder.
+	Always check for methods that can help. eg List methods.
+
+43. Adding AutoMapper to the API project
+	Open NuGet Gallery and search for AutoMapper.Extensions.Microsoft.DependencyInjection by Jimmy Bogard.
+	Install this package in the API.csproj file.	
+	Create a new folder called Helpers in the API project.
+	Create a new class called MappingProfiles in the Helpers folder.
+	Add the Profile to the MappingProfiles class (inherit).
+	Add mappings using the CreateMap.
+	Add AutoMapper as a service in the startup class. e.g services.AddAutoMapper(typeof(MappingProfiles));
+	Add IMapper mapper to the ProductsController constructor so you can use it.
+
+44. Configuring AutoMapper Profiles
+	Add extra configuration to the profiles where needed.
+	Customize configuration for an individual memeber. eg.
+		.ForMember(d => d.ProductBrand, o => o.MapFrom(s => s.ProductBrand.Name))
+
+45. Adding a Custom Value Resolver for AutoMapper
+	Sorting out the address of the pictures. In postman they don't have the address of the api.
+	In the appsettings.Development.json file, add "ApiUrl": "https://localhost:5001/" .
+	In the Helpers folder create a new class called ProductUrlResolver.
+	ProductUrlResolver must inherit from IValueResolver<Product, ProductToReturnDto, string> .
+	Implement the methods in the ProductResolver class.
+	Add the following to the Mapping Profile in the MappingProfiles class
+		.ForMember(d => d.PictureUrl, o => o.MapFrom<ProductUrlResolver>());
+	
+46. Serving static content from the API
+	Get images from the API server so when we browse to an image then we will be able to see it.
+	Create a folder in the API project called wwwroot.
+	Copy the images folder from the students assets apiImages folder and paste them in the wwwroot folder.
+	In the startup class, add app.UseStaticFiles(); after the app.UseRouting();  (in the middlware)
+
+
+SECTION 5 - API ERROR HANDLING
+
+48. Introduction
+	
+49. Creating a test controller for errors
+	Create a BaseApiController that will be inherited by other controllers in the Controllers folder. (API project)
+	Create a BuggyController in the Controllers folder.
+	Implement the error methods in the BuggyController. (4 in total)
+	Remember to restart the application everytime you add a controller.
+	For the error 
+		- System.NullReferenceException: Object reference not set to an instance of an object.
+		Occurs when an object is null, and then the api tries to do an operation on a null object. (check for null).
+	Test the BuggyController in postman.
+
+50. Creating a consistent error response from the API
+	Create a folder called Errors in the API project.
+	Create a class called ApiResponse in the Errors Folder.
+	The "??" is called the null coalecing operator. (asked in interviews)
+		How it works eg : Message = message ?? GetDefaultMessageForStatusCode(statusCode);
+		If message is null, then the GetDefaultMessageForStatusCode(statusCode) will run and return a value
+		that will be placed in Message. If message is not null then the value in message will be placed
+		inside Message.
+	Implement the methods inside the ApiResponse class.
+	You can use the new switch statement. (cleaner code).	
+
+51. Adding a not found endpoint error handler
+	Create a new controller class called ErrorController in the Controllers folder.
+	Implement the methods in the ErrorController class.
+	In the Startup class middleware (configure method) add app.UseStatusCodePagesWithReExecute("/errors/{0}"); after the error handler ( e.g if (env.IsDevelopment())).
+	Becarful with strings.
+
+52. Creating Exception handler middleware ***
+	Create a class called ApiException in the Errors folder.
+	Create a folder called Middlware in the API project.
+	Create a class called ExceptionMiddleware in the Middleware folder.
+	In the Startup class configure method add app.UseMiddleware<ExceptionMiddleware>(); at the top.
+	Test with postman.
+
+53. Improving the validation error responses
+	Create a class called ApiValidationErrorResponse in the Errors folder.
+	In the Startup class ConfigureServices method, add the following code after services.AddControllers();
+		services.Configure<ApiBehaviorOptions>...
+	Test with postman.
+
+54. Adding Swagger for documenting our API
+	Use your browser to go to https://localhost:5001/swagger/index.html (will probably get an error).
+	In the ErrorController below the [Route("errors/{code}")] attribute, add [ApiExplorerSettings(IgnoreApi = true)] .This will remove the ErrorController from the Swagger documentation.
+	Use your browser to go to https://localhost:5001/swagger/index.html .
+	In the WeatherForcastController under [Route("[controller]")], add the [ApiExplorerSettings(IgnoreApi = true)] attribute.
+	In the Startup class Configure method, in the if (env.IsDevelopment())... cut the 
+		app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
+		
+		out and paste it below the app.UseMiddleware<ExceptionMiddleware>(); .
+		delete the if (env.IsDevelopment())... .
+		This will make Swagger available in development and production.
+
+	Packages you may have to install (Microsoft.AspNetCore.Authentication.JwtBearer, Microsoft.AspNetCore.Authentication.OpenIdConnect).
+	Swagger basically documents all the end points and also allows you to execute requests and get responses in the browser.
+	Swagger helps the front end developer.
+
+55. Improving the swagger documentation
+	In the ProductsController in the GetProduct(int id), add if (product == null) return NotFound(new ApiResponse(404)); .
+	Use your browser to go to https://localhost:5001/swagger/index.html . It will now be able return a NotFound error for the specific endpoint
+	In the ProductsController just below the [HttpGet("{id}")], add
+		[ProducesResponseType(StatusCodes.Status200OK)]
+        	[ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+	Use your browser to go to https://localhost:5001/swagger/index.html . (Test it out). Note the code above will not be added for every request created. Its just an example to show that it can be done.
+
+56. Cleaning up the Startup class
+	Create a folder called Extensions in the API project.
+	Create a static class called ApplicationServicesExtensions.
+	Cut and paste some services from the Startup class to the ApplicationServicesExtensions class.
+	In the Startup class ConfigureServices method, add services.AddApplicationServices(); . This method is from the ApplicationServicesExtensions class.
+	Test with postman. Make sure you haven't broken anything.
+	Create a static class called SwaggerServiceExtensions in the Extensions folder.
+	Cut and paste the services.AddSwaggerGen... from the Startup ConfigureServices method, into the SwaggerServiceExtensions class.
+	In the SwaggerServiceExtensions class, add another extension method called UseSwaggerDocumentation.
+	Cut the Swagger stuff from the Startup class Configure method, and paste it in the UseSwaggerDocumentation method. 
+	In the Startup class ConfigureServices method add services.AddSwaggerDocumentation();
+	In the Startup class Configure method below the app.UseAuthorization(); , add app.UseSwaggerDocumentation(); .
+	Test in browser.
+	Remove unnecessary usings at the top of the Startup class.
+
+SECTION 6 - API PAGING, FILTERING, SORTING AND SEARCHING
+
+58. Introduction
+	
+59. Adding a sorting specification class
+	In the ISpecification interface, add an expression get property called OrderBy.
+	In the ISpecification interface, add an expression get property called OrderByDescending.
+	In the BaseSpecification class, implement the above properties.
+	In the BaseSpecification class, add the private AddOrderBy and AddOrderByDescending methods.
+	In the SpecificationEvaluator class add if (spec.OrderBy != null)... and if (spec.OrderByDescending != null)...  .
+	In the ProductsController, in the GetProducts method, add string sort as a formal parameter.
+		In the GetProducts method, pass sort into the ProductsWithTypesAndBrandsSpecification(sort) .
+
+60. Adding a sorting specification part 2
+	In the ProductsWithTypesAndBrandsSpecification class, in a constructor add string sort.
+		Add the if (!string.IsNullOrEmpty(sort))... to a constructor.
+	Test in postman.
+
+61. Working around the decimal problem in Sqlite
+	In the StoreContext class, in the OnModelCreating method add if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")...  .
+	Test in postman.
+
+62. Adding filtering functionality
+	In the ProductsController class, in the GetProducts method, add the brandId and typeId formal parameters.
+		In the GetProducts method, add the brandId and typeId to the ProductsWithTypesAndBrandsSpecification(sort, brandId, typeId).
+	In the ProductsWithTypesAndBrandsSpecification class, update the constructor with the brandId and typeId.
+	Test in postman.
+
+63. Adding Pagination Part 1
+	In the ISpecification interface, add the Take, Skip, and IsPagingEnabled get properties.
+	In the BaseSpecification class, implement the Take, Skip and IsPagingEnabled properties.
+		Add the ApplyPaging method. (this is sets the properties, setter method).
+	In the SpecificationEvaluator, in the GetQuery method add if (spec.IsPagingEnabled)... . (remember the ordering in the query method is important)
+
+64. Adding Pagination Part 2
+	In the Specifications folder, add a class called ProductSpecParams.
+	In the ProductSpecParams class, implement the properties and things for pagination.
+	In the ProductsController class, in the GetProducts method, change the formal parameters to ProductSpecParams type with the name productParams.
+		In the GetProducts method, pass the productParams into ProductsWithTypesAndBrandsSpecification(productParams).
+	In the ProductsWithTypesAndBrandsSpecification class, modify the constructor to use the ProductSpecParams type as a formal parameter.
+		Update the rest of the class to use the ProductSpecParams.
+	Test in postman.
+	In the ProductsController class, in the GetProducts method, add [FromQuery] next to the type of the formal parameter so that the controller
+		knows where to get the values from.
+	Test in postman.
+	In the ProductsWithTypesAndBrandsSpecification class, add ApplyPaging method in the constructor.
+	Test in postman.
+
+65. Adding Pagination Part 3
+	Add a class call Pagination<T> in the Helpers folder.
+		Add all the necessary properties inside Pagination.
+	In the IGenericRepository, add Task<int> CountAsync(ISpecification<T> spec);
+	In the GenericRepository, implement the CountAsync method.
+	In the Specifications folder, add a class called ProductWithFiltersForCountSpecification.
+		Implement all the necessary things.
+	In the ProductsController, update the GetProducts method with pagination stuff.
+	In the Pagination class, add a constructor.
+	Test in postman.
+
+66. Adding the search functionality
+	In the ProductSpecParams, add the search property.
+	In the ProductsWithTypesAndBrandsSpecification class, add (string.IsNullOrEmpty(productParams.Search) || x.Name.ToLower().Contains(productParams.Search)) && to the constructor.
+	In the ProductWithFiltersForCountSpecification class, add (string.IsNullOrEmpty(productParams.Search) || x.Name.ToLower().Contains(productParams.Search)) && to the constructor.
+	Test in postman.
+
+67. Adding CORS Support to the API
+	In the Startup class, in the ConfigureServices method, add services.AddCors...  .
+	In the Startup class, in the Configure method, before app.UseAuthorization();  , after app.UseStaticFiles(); , add app.UseCors("CorsPolicy");
+	Test in postman.
+
+SECTION 7 - CLIENT - ANGULAR SETUP
+
+69. Introduction
+	
+70. Setting up the development environment for Angular
+	Check what package of node that the angular supports before installing. Go to angular cli documentation, then setup.
+	Check what npm version nodejs installs. It has to match the one for angular.
+		In the package.json file for angular, the "^" means that the first number cannot change but the middle number can
+		e.g  "node": "^12.14.1 || ^14.0.0" , means that only version 12.x.x or 14.x.x are supported. So node version 15.x.x is not supported and will not work.
+	You can install NVM (node version manager) to change between version of node installed on your pc.
+	You can install a specific version of angular. e.g npm install -g @angular/cli@11.2.1
+
+71. Creating the Angular project
+	In the terminal, in the skinet folder, use the "ng new client" command to create a new angular project called client.
+		For the question during installation: 
+			say No to strict mode.
+			say y (yes) to angular routing.
+			choose SCSS.
+	Run the angular application. Use "ng serve" command in the client folder to check that it is working.
+
+72. Reviewing the Angular project files in the template
+	
+73. Setting up Angular to use HTTPS
+	In the client folder, create a new folder called ssl.
+	In the StudentAssets folder, in the generatedTrustedSSL folder, copy the server and server.key files.
+	Paste the server and server.key files in the ssl folder.
+	Follow the instructions in the generatedTrustedSSL folder.
+	In the client folder, In the angular.json file look for the "serve" and then inside that, "options".
+		In the "options" under the "browserTarget" add the following:
+			"sslKey": "ssl/server.key",
+            		"sslCert": "ssl/server.crt",
+            		"ssl": true
+	Run the application and check that it is listening on https.
+
+74. Adding bootstrap and font-awesome (I might use bootstrap 5 later after I do the bootstrap 5 course)
+	Go to the ngx bootstrap website and check compatibility and how to install ngx bootstrap.
+	To install first:
+		Run the "npm install ngx-bootstrap" in the terminal in the client folder. (look in the package.json file to see if it installed also check in the node_modules for the folders).
+		Install bootstrap in the client folder using this command "npm install bootstrap@4.6.0" . Currently v5 of bootstrap is not supported by ngx-bootstrap.
+		Install font-awesome(for icons) in the client folder using this command "npm install font-awesome" .
+		Next we have to install the css files into the "styles" array in the angular.json file.
+		In the angular.json file, in the "architect" then "build", look for "styles" and add the folling in "styles":
+			"./node_modules/bootstrap/dist/css/bootstrap.min.css",
+              		"./node_modules/ngx-bootstrap/datepicker/bs-datepicker.css",
+              		"./node_modules/font-awesome/css/font-awesome.min.css",
+		In the app.module.ts file :
+			In "imports" add BrowserAnimationsModule.
+			At the top add import { BrowserAnimationsModule } from '@angular/platform-browser/animations' .
+	Note any changes done in the angular.json file requires you to restart the angular application.
+
+75. Adding VS Code extensions for Angular
+	List of extensions:
+		Angular Language Service. (Angular). May have to adjust the settings for this extension.
+		Angular Snippets. (John Papa)
+		Bracked Pair Colorizer 2. (CoenraadS)
+		
+
+SECTION 8 - CLIENT - ANGULAR BASICS
+
+76. Introduction
+
+77. Adding a Nav Bar component
+	use "ng g c nav-bar --skip-tests" in the client/src/app folder to create a component named "nav-bar" (This style of name is a convention).
+	In the app.component.html add "<app-nav-bar></app-nav-bar>" (this is the nav-bar selector) at the top.
+	Run the application.
+
+78. Adding the NavBar HTML code
+
+79. Styling the nav bar
+	In the StudentsAssets folder, in the ClientImages folder, copy the images folder into the assets folder of the angular application.
+	Update nav-bar component.html .
+	Add css to the nav-bar.component.scss . Add the .cart-no class.
+	Update nav-bar component.html .
+	Update app.component.html.
+
+80. Intro to the Http Client Module
+	In the app.module.ts, in "imports" array, add HttpClientModule. Then at the top add import { HttpClientModule } from '@angular/common/http';
+	You can google angular lifecycle hooks for extra information.
+	In the app.component.ts, after "AppComponent" add "implements OnInit.
+		Implement the ngOnInit method.
+		Add a contructor.
+		Inject the HttpClient into the constructor.
+		Use the HttpClient get method to get the products from the API and use console.log(response) to display it. (remeber to subscribe). Also log the error to the console if there is one.
+		Add a query string to the end of the url e.g ?pageSize=50;
+		Test.
+		Add a property products: any[] , then store the response in it and use it in the app.component.html so it can be displayed.
+			code should look like this:
+				<div class="container" style="margin-top: 140px;">
+    					<h1>Welcome to {{ title }}!</h1>
+    					<ul>
+        					<li class="list-unstyled" *ngFor="let product of products">
+            						{{product.name}}
+        					</li>
+    					</ul>
+				</div>
+		Test.
+
+81. Observables (Theory lecture)
+	
+82. Intro to Typescript (Theory lecture)
+
+83. Typescript Demo (Theory lecture)
+
+84. Creating a products interface
+	Using the Swagger UI from the API, copy the Example value from the GET /api​/Products​/{id} endpoint.
+		Then use an online tool to convert the Json to Ts. Copy the TS and use it to create the interface in the application.
+	In the app folder, create a folder called models.
+	In the models folder, create a file called product.ts .
+	In the product.ts, copy the converted ts code and modify it. (product interface).
+	Modify the app.component.ts file to use the product interface.
+	Use the Swagger UI from the API, copy the Example value from the GET /api​/Products endpoint. Convert from JSON to TS.
+	In the models folder, create a new file called pagination.ts .
+	In the pagination.ts, copy the converted ts code and modify it. (pagination interface).
+	Modify the app.component.ts file to use the pagination interface.
+
+SECTION 9 - CLIENT - BUILDING THE UI FOR OUR SHOP
+
+86. Introduction
+	File and Folder structure in Angular.
+	App Module --> Core Module, Shared Module, Feature Modules.
+	Core Module - Singletons: NavBar (Things that are always available in the application).
+	Shared Module - Shared Components: Anything we need to use in more than 1 feature module.
+	Feature Modules - App Features: Each feature we create will have its own module and routing.
+	
+87. Organising our files and folders *
+	Create a module in the app folder called core. Use this command "ng g m core" .
+	Create a module in the app folder called shop (aka feature). Use this command "ng g m shop" .
+	Create a module in the app folder called shared. Use this command "ng g m shared" .
+	In the shop folder, create a component called shop. Use this command "ng g c shop --flat --skip-tests" . (--flat means no folder).
+	In the shop folder, create a service called shop. Use this command "ng g s shop --skip-tests --flat" .
+	In the shop folder, create a module called shop-routing. Use this command "ng g m shop-routing --flat" .
+	Move the nav-bar folder to inside the core folder. (look out for imports issues)
+	In the app.module.ts file, remove the NavBarComponent with its import.
+		In the "imports" array, add the CoreModule.
+	In the core.module.ts file, In the "declarations" array add the NavBarComponent. Also add it NavBarComponent import.
+		Under the "imports" array, add an array called "exports". (same format as "imports")
+		Add the NavBarComponent into the "exports" array also.
+	Test that the angular app is still working.
+	Move the models folder into the shared folder.
+	
+
+88. Intro to Angular services
+	Services in angular are singleton, which means they are always available.
+	In the shop.service.ts
+		Add a property called baseUrl. Assign it the value of "https://localhost:5001/api/" .
+		Inject the HttpClient into the constructor and give it the name "http".
+		Create a method called getProducts(). (use angle brackets after the get to add the type of observable returned, this is for type safety).
+	
+89. Consuming services in the component
+	In the shop.component.ts file:
+		Add a property called products with the type of IProduct[].
+		Inject the ShopService inside the constructor.
+		Use the shopService getProducts() method inside the ngOnInit method. Remember to subscribe. Also log any errors to the console.
+		In the app.component.html, cut the unordered list and past it inside the shop.component.html .
+		Clean up the app.component.ts . (Remove whatever is not being used).
+		In the app.module.ts, in the "imports" array add the ShopModule.
+		In the shop.module.ts, add the "exports" array under the "imports" array.
+			Add ShopComponent to the "exports" array.
+		In the app.component.html file, add the "<app-shop></app-shop>" selector.
+		Test the application. (Note sometimes you have to stop and restart the application for changes to be recognized).
+		In the shop.service.ts, add on the query string "?pageSize=50" in the getProducts() method.
+	
+90. Designing the shop page
+	Update the shop.component.html with html, container and two sections called filters and Main Content
+	In the app.component.html, remove the title with the welcome message.
+	Go to bootstrap website, see examples, in the Album example, copy the html element that has all the thumbnails.
+	In the shop.component.html, paste the Album element into the main section.
+	Test and see.
+	Go to bootstrap website, see documentation, see components, see list group. Look for Active items, copy.
+	In the shop.component.html, paste the Active items element inside the filters section (There is more html).
+	Update the shop.component.html with more html. (Use static content just so you can see the layout of the page).
+	
+91. Adding a child component for the product items
+	In the shop.component.html file is very busy so create a child component that is going to store and be responsible for the individual product items.
+	In the shop folder, create a new component called product-item. Use this command "ng g c product-item --skip-tests".
+	In the shop.component.html copy one of the cards (class with card) and paste it in the product-item.component.html . 
+		Remove the rest of the cards but leave the outer divs.
+		Add the "<app-product-item></app-product-item>" selector in the place of the removed cards.
+		Use a-ngFor to loop over the products.
+	Test.
+	
+92. Passing down data to child components
+	In the product-item.component.ts, add an input property called product i.e "@Input() product: IProduct;"
+	In the shop.component.html, in the app-product-item tag, add [product]="item" .
+	Update the product-item.component.html . 
+	Update the product-item.component.scss .
+
+93. Adding the product filters
+	Use Swagger UI to check the products brands endpoints for the responses.
+	In the models folder,
+		Create a file called brands.ts, in the file create a interface called IBrand.
+		Create a file called productType.ts, in the file create an interface called IType.
+	In the shop.service.ts
+		Create a method called getBrands(), in the method use the http get<IBrand[]> method to return the brands.
+		Create a method called getTypes(), in the method use the http get<IType[]> method to return the types.
+	In the shop.component.ts
+		Create a method called getProducts(), cut all the code in the ngOnInit() and paste it in the getProducts() method;
+		Add a property called brands i.e "brands: IBrand[];" .
+		Add a property called types i.e "types: IType[];" .
+		Create a method called getBrands(), use shop service to get the brands.
+		Create a method called getTypes(), use shop service to get the types.
+		In the ngOnInit() method, add the getProducts(), getBrands() and getTypes() methods.
+	In the shop.component.html
+		Update the filters.
+	Check browser.
+
+94. Adding the filter functionality
+	In the shop.service.ts
+		In the getProducts method add two formal optional parameters brandId? and typeId? of type number.
+			Create a variable called params for the query strings. (remember to initialise "new HttpParams()" ).
+			Check if the brandId and typeId have values, if they do append them to the params variable.
+			Add {observe: response, params} to the get method.
+			Add a pipe to the get method, then add map(response)... . (rxjs operators). (Note in the pipe method you can chain many rxjs operators, add a "," after each rxjs operator to chain them).
+		Add the following import at the top "import { map } from 'rxjs/operators';" .
+	In the shop.component.ts
+		Add a property called brandIdSelected of type number.
+		Add a property called typeIdSelected of type number.
+		Create a method called onBrandSelected(brandId: number)... .
+		Create a method called onTypeSelected(typeId: number)... .
+		In the getProducts() method, add the brandIdSelected and typeIdSelected in the shopService.getProducts method.
+		In the getBrands() method, assign "[{ id: 0, name: 'All' }, ...response];" to this.brands.
+		In the getTypes() method, assign "[{ id: 0, name: 'All' }, ...response];" to this.types.
+	Check browser.
+	
+95. Hooking up the filter to the HTML
+	In the shop.component.html
+		Update the filters.
+	Check browser.
+	In the shop.component.ts
+		Give the brandIdSelected property an initial value of 0;
+		Give the typeIdSelected property an initial value of 0;
+	Check browser.
+
+96. Adding the sort functionality
+	In the shop.component.ts
+		Add a property called sortSelected and give it an initial value of "name".
+		Add a property called sortOptions. Give it a value of an array with object elements. Each object will have a name and a value property.
+		Add a method called onSortSelected(sort: string)... .
+		In the getProducts() method, add sortSelected into the shopService.getProducts method.
+	In the shop.service.ts, in the getProducts method, add a formal parameter called sort? of type string and update the rest of the method.
+	In the shop.component.html, update the select tag.
+	Check browser.
+	May get an error. (go to tsconfig.json, in "angularCompilerOptions" add '"strictDomEventTypes": false,"') . Restart application.
+	Check browser.
+
+97. Adding the pagination functionality
+	Go to ngx-bootstrap site, look for pagination in the components section. See what you need.
+	In the shared.module.ts
+		In "imports" array add "PaginationModule.forRoot()" .
+		At the top add the import "import { PaginationModule } from 'ngx-bootstrap/pagination';" .
+		Under the "imports" array, add "exports" array. In the "exports" array add "PaginationModule" . 
+	In the shop.module.ts, in the "imports" array add "SharedModule".
+	Go to ngx-bootstrap site, look for pagination in the components section, then look for "Custom links content" and copy the code in the template.
+		Paste the code in the shop.component.html .	
+	Check browser.
+	Update the shop.component.html.
+
+98. Adding the pagination functionality part 2
+	In the models folder, create a file called shopParams.ts.
+	Inside the shopParams.ts
+		Create a class called ShopParams
+		Cut the brandIdSelected, typeIdSelected and sortSelected from the shop.component.ts and paste it in the ShopParams class. Change their names to brandId, typeId and sort.
+		Add pageNumber and pageSize properties with initial values.
+	In the shop.component.ts
+		Add the shopParams property.
+		Update the getProducts method().
+	In the shop.service.ts
+		Update the getProducts method.
+	Update methods in the shop.component.ts.
+	Update the shop.component.html.
+	Check that nothing is broken. (sometimes vs code doesn't pick up all the errors that are there).
+	In the shop.component.ts
+		Add a property called totalCount.
+		In the getProducts method, assign values to the shopParams properties and to totalCount.
+	In the shop.component.html
+		Update pagination totalItems.
+
+99. Adding the pagination functionality part 3
+	In the shop.service.ts
+		Update the getProducts method.
+		In the getProducts method, append pageIndex, pageSize.
+	In the shop.component.ts
+		Add the onPageChanged(event: any) method.
+	In the shop.component.html
+		Update the pagination.
+
+100. Adding a pagination header
+	In the shop.component.html
+		Update the pagination header.
+	Check the browser when making changes to see if things are working correctly.
+
+101. Making the pagination component a shared component
+	In the shared folder, create a new folder called components.
+	In the components folder, create a new component called paging-header.
+	In the shop.component.html, cut the header tag (and everything in it) and paste it in the paging-header.component.html.
+	In the paging-header.component.ts
+		Add and input property called pageNumber. Like this "@Input() pageNumber: number;". 
+		Add and input property called pageSize. Like this "@Input() pageSize: number;" .
+		Add and input property called totalCount. Like this "@Input() totalCount: number;" .
+	Update the paging-header.component.html.
+	In the shared.module.ts, add PagingHeaderComponent to the "exports" array.
+	In ths shop.module.ts, make sure that SharedModule is in the "imports" array.
+	In the shop.component.html
+		Add the "<app-paging-header></app-paging-header>" tag where the header tag use to be.
+		Pass in the input parameters for the "app-paging-header". The [totalCount], [pageSize] and [pageNumber].
+
+102. Pagination and Output properties
+	In the components folder, create a new component called pager.
+	In the shared.module.ts, add PagerComponent to the "exports" array.
+	In the shop.component.html, cut the pagination tag(and everything in it) and paste it in the pager.component.html.
+	In the pager.component.ts (child)
+		Add an Input property called "totalCount".
+		Add an Input property called "".
+		Add an Output property called pageChanged i.e part 1. Like this "@Output() pageChanged = new EventEmitter<number>();". (Remember there are four parts to an output property).
+		Add a method called onPagerChange(event:any)...
+		In the onPagerChange method add "this.pageChanged.emit(event.page);" .
+	In the pager.component.html, add "(pageChanged)="onPagerChange($event)"" in the pagination tag. Update the pager.component.html.
+	In the shop.component.html (parent)
+		Add the "app-pager" tag where the pagination use to be.
+		Pass in the input parameters and output parameter for the "app-pager" tag. For the output parameter use "(pageChanged)="onPageChanged($event)"".
+	Test in browser.
+	In the shop.component.ts
+		In the onPageChanged method. Change "event.page" to event.
+	Test in browser.
+
+103. Adding the search functionality (Note: You would typically use an angular form for this)
+	In the shop.component.html, where the search button is, add a template reference variable "#search" to the input tag.
+	In the shop.component.ts
+		Add the viewChild property i.e "@ViewChild("search", { static: true }) searchTerm: ElementRef;". This allows us to access the value of the input tag in our code.
+		Add a method called onSearch()... . (Add a property in shopParams.ts called "search" of type string).
+		Add a method called onReset()... .
+	In the shop.component.html, update the search functionality with click events.
+	In the shop.service.ts, update the getProducts method with the search property.
+	Test in browser.
+	In the shop.component.html, update the input tag with "(keyup.enter)="onSearch()"". This allows us to press enter to search instead of the button.
+	Test in browser.
+
+104. Resolving the Bug!
+	Get as much information about the error as possible.
+	Recreate the error.
+	Sometimes you can only see the error in the network tab.
+	In the shop.component.ts
+		In the onBrandSelected, onTypeSelected and onSearch methods, add "this.shopParams.pageNumber = 1;" .
+	Test in browser, check the console tab.
+	In the shop.component.ts, update the onPageChanged method. (with an if statement).
+	Test in browser.
+
+SECTION 10 - CLIENT - ROUTING
+
+106. Introduction
+	
+107. Creating additional components to route to
+	In the app folder
+		Create a module called home. I.e "ng g m home" . 
+	In the home folder
+		Create a component called home without a folder. I.e "ng g c home --skip-tests --flat" .
+	In the shop folder
+		Create a component called product-details. I.e "ng g c product-details --skip-tests" .
+
+108. Creating the routes
+	In the app-routing.module.ts, in the const "Routes" array add an object for each route. e.g "{ path: "", component: HomeComponent }" . For the Home, Shop and ProductDetails components.
+		These are the routes to add in the "Routes" array.
+		{ path: "", component: HomeComponent },
+  		{ path: "shop", component: ShopComponent },
+  		{ path: "shop/:id", component: ProductDetailsComponent },
+  		{ path: "**", redirectTo: "", pathMatch: "full" }
+	In the home.module.ts
+		Add an "exports" array.
+		Add HomeComponent to the "exports" array.
+	In the app.module.ts
+		In the "imports" array, add HomeModule.
+	In app.component.html
+		Remove the app-shop tag and replace it with "<router-outlet></router-outlet>" .
+	Test in browser. Make sure you can route to all the routes you created.
+	
+109. Setting up the nav links
+	In the core.module.ts, add RouterModule to the "imports" array.
+	In the nav-bar.component.html
+		Replace all the hrefs with the router link. e.g "[routerLink]="['/']"". 
+		Add [routerLink] to the logo (img tag). To route to the home page.
+	Test in browser.
+	In the product-item.component.html
+		Add a routerLink to the "view" button. (might have an error, will be sorted out in the next step).
+		Add a routerLink to the title. I.e "routerLink="/shop/{{product.id}}"" .
+	In the shop.module.ts
+		In the "imports" array add RouterModule.
+
+110. Making the links active
+	In the nav-bar.component.html, add routerLinkActive attribute to the links.
+	In the nav-bar.component.scss, add a class for the links e.g a.
+	In the nav-bar.component.html and in the nav-bar.component.scss, update the img tag and add a class for the image tag called logo.
+
+111. Getting an individual product
+	In the shop.service.ts
+		Create a method called getProduct()... .
+	In the product-details.component.ts
+		Add a property called product of type IProduct.
+		Inject the shop service in the constructor.
+		Create a method called loadProduct()... .
+		In the ngOnInit() method, call the loadProduct() method.
+	In the product-details.component.html, add an h1 tag and in it "{{product.name}}".
+	Test in browser.
+	Check console for errors.
+	For the "undefined" error, it means that angular loads the html template first before it gets the value. Use "?" in the template to make it optional, OR use the *ngIf in a div to check for the value.
+	In the product-details.component.html, add a div with an *ngIf.
+	In the product-details.component.ts
+		Add "private activateRoute: ActivatedRoute" in the constructor.
+		In the loadProduct() method
+			In the shopService getProduct method add "+this.activateRoute.snapshot.paramMap.get('id')" . The "+" converts the string to a number.
+			For the getProduct id parameter, we get the id from the route that accesses the product-details component.
+	Test in browser.
+
+112. Adding the product detail page
+	In the product-detail.component.html, update.	
+	
+113. Lazy loading angular modules *
+	In the app-routing.module.ts, in the Routes array, copy the "shop" and "shop/:id" routes.
+	In the shop-routing.module.ts create an array called "routes" like the one in the app-routing.module.ts, paste the two routes in there.
+		In the routes array, for each path remove the "shop" and "shop/" so that it is just "" and ":id".
+		In the "imports" array, remove the CommonModule and add "RouterModule.forChild(routes)" .
+		Add an "exports" array, in the exports array add "RouterModule" .
+	In the shop.module.ts
+		In the "imports" array, remove the "RouterModule" and replace it with "ShopRoutingModule".
+	In the app-routing.module.ts
+		In the Routes array, remove the path with "shop/:id" and component.
+			edit the path with "shop" to look like this: "{ path: "shop", loadChildren: () => import('./shop/shop.module').then(mod => mod.ShopModule) }," .
+	In the app.module.ts, in the "imports" array, remove the "ShopModule".
+	In the shop.module.ts, remove the "exports" array.	
+	Restart the application and test in browser. Check the network tab to see the shop module loaded.
+	
+SECTION 11 - CLIENT - ERROR HANDLING
+
+115. Introduction
+
+116. Creating an error component for testing the error responses *
+	In the Swagger UI, check the responses that you get from the API.
+	In the core folder, create a component called test-error i.e. "ng g c test-error --skip-tests" .
+	In the app-routing.module.ts
+		In the Routes array add "{ path: "test-error", component: TestErrorComponent }," .
+	In the nav-bar.component.html
+		Modify the  a tag with Contacts for Errors. i.e "routerLink="/test-error" routerLinkActive="active">Errors</a>" .
+	Test in browser.
+	In the environments folder *
+		In the environments.ts file, add "apiUrl: "https://localhost:5001/api/"" .
+	In the test-error.component.ts
+		Inject the HttpClient into the constructor.
+		Add a property called baseUrl. i.e "baseUrl = environment.apiUrl;" .
+		Create the get404Error() method.
+		Create the get500Error() method.
+		Create the get400Error() method.
+		Create the get400ValidationError() method.
+	In the test-error.component.html
+		Add the buttons with click events.
+	Test in browser. Open the console.
+
+117. Creating additional error components
+	In the core folder
+		Create a component called not-found.
+		Create a component called server-error.
+	In the server-error.component.html, add a div container and an h1 tag with Internal Server Error.
+	In the not-found.component.html, add a div container and an h1 tag with Not Found.
+	In the app-routing.module.ts
+		In the Routes array, add "{ path: "server-error", component: ServerErrorComponent }," .
+		In the Routes array, add "{ path: "not-found", component: NotFoundComponent }," .
+	Test in browser. Manually type the route in the browser.
+	
+118. Using the Http Interceptor to catch errors.
+	In the core folder, create a new folder called interceptors.
+	In the interceptors folder
+		Create an interceptor called error. i.e "ng g interceptor error --skip-tests" .
+	In the error.interceptor.ts
+		Inject the Router into the contructor. i.e "private router: Router" .
+		Modify the intercept method.
+	In the app.module.ts
+		In the "providers" array add "{ provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true }" .
+	Test in browser.
+	
+119. Adding toast notifications
+	In the client folder (terminal), use this command "npm install ngx-toastr@11.3.2" .
+	In the core.module.ts
+		In the "imports" array add ToastrModule.forRoot()... .May give errors. If there are errors, close VS Code and open it again.
+	In the angular.json file
+		In "architect", look for "styles" array, add "./node_modules/ngx-toastr/toastr.css" .
+	In the error.interceptor.ts
+		Inject the toastr service. i.e "private toastr: ToastrService" .
+		Update the intercept method.
+	Restart angular application.
+	Test in browser.
+
+120. Handling validation errors
+	In the error.interceptor.ts
+		Update interceptor method.
+	In the test-error.component.ts
+		Add a property called validationErrors of type any.
+		In the get400ValidationError() method, add "this.validationErrors = error.errors;"  in the error section.
+	In the test-error.component.html, add code to display the errors in validationErrors.
+	Test in browser.
+
+121. Improving the internal server error component
+	In the error.interceptor.ts
+		In the if(error.status === 500)... block
+			Add "const navigationExtras: NavigationExtras = { state: { error: error.error } };" .
+			Pass in the navigationExtras in navigateByUrl. i.e "this.router.navigateByUrl("/server-error", navigationExtras);" .
+	In the server-error.component.ts
+		Inject the Router into the constructor.
+		Update the constructor body.
+		Add a property called error of type any.
+	In the server-error.component.html, create a student friendly error page. (not for production).
+	Remeber refreshing the page will make the error go away. (Data doesn't persist).
+	
+SECTION 12 - CLIENT - PAZZAZZ
+
+123. Introduction
+	
+124. Adding a section header
+	In the core folder
+		Create a new component called section-header. (remember to skip tests).
+	In the section-header.component.html, add code.
+		For an example of breadcrumbs, see bootstrap website components.
+	In the core.module.ts
+		In the "exports" array, add "SectionHeaderComponent" .
+	In the app.component.html
+		below the app-nav-bar, add "<app-section-header></app-section-header>" .
+	Test in browser.
+	In the app.component.html
+		remove the style attribute.
+	In the shop.component.html
+		update the div container.
+	Test in browser.
+
+125. Adding breadcrumbs
+	In the client folder (terminal)
+		Install the xng-breadcrumb package. i.e "npm install --save xng-breadcrumb@5.0.1" .
+	In the core.module.ts
+		In the "imports" array add "BreadcrumbModule" . May give you errors. Close VS Code and open it again.		
+	In the section-header.component.html, add "<xng-breadcrumb></xng-breadcrumb>" .
+	In the app-routing.module.ts
+		In the Routes array
+			For each route add "data: { breadcrumb: "Test Errors" }" . Just change the breadcrumb property to match the route.
+		
+126. Using the breadcrumb service
+	In the shop-routing.module.ts
+		In the Routes array
+			The route with the productDetailsComponent, add "data: { breadcrumb: { alias: "productDetails" } }" .
+	In the product-details.component.ts
+		Inject the breadcrumb service into the contstructor. i.e "private bcService: BreadcrumbService" .
+		In the loadProduct() method, add "this.bcService.set('@productDetails', product.name);" .
+	Test in browser.
+	In the styles.scss, add the ".xng-breadcrumb-root", "label.xng-breadcrumb-trail" and ".xng-breadcrumb-seperator" classes.
+	Test in browser.
+
+127. Setting the section header title from the breadcrumb service
+	In the section-header.component.ts
+		Inject the breadcrumb service into the constructor. i.e "private bcService: BreadcrumbService".
+		Add a property called breadcrumb$. i.e "breadcrumb$: Observable<any[]>;" .
+		In the ngOnInit() method, add "this.breadcrumb$ = this.bcService.breadcrumbs$;" .
+	In the section-header.component.html
+		Add a ng-container and other code... . Use the async pipe. i.e "(breadcrumb$ | async) as breadcrumbs" . The async pipe will subscribe and unsubscribe automatically to the observable.
+	Test in browser.
+	Side Note: Observables from http requests unsubscribe after they complete. Other observables you may have to manually unsubscribe.
+	
+128. Styling the product items
+	In the product-item.component.html, add code.
+	In the product-item.component.scss, add code.
+
+129. Changing the bootstrap theme
+	Go to the Bootswatch website or go to Themestr.app website.
+	In the client folder (terminal)
+		Run this command "npm install bootswatch" .
+	In the angular.json file
+		In the "architect", in "styles" add "./node_modules/bootswatch/dist/united/bootstrap.min.css" . 
+	Test in browser.
+
+130. Adding loading indicators
+	In the error.interceptor.ts
+		Add the delay rxjs operator in the pipe. i.e "delay(1000)," .
+	In the client folder (terminal)
+		Run this command "npm install ngx-spinner" .
+	In the app.module.ts
+		In the "imports" array, add "NgxSpinnerModule" .
+	In the app.component.html
+		At the top add the ngx-spinner tag.
+	In the core folder, create a folder called services.
+	In the services folder (terminal)
+		Create a new service called busy. i.e "ng g s busy --flat --skip-tests" .
+	In the busy.service.ts
+		Add a property called busyRequestCount and set it to 0;
+		Inject the spinner service into the constructor. i.e "private spinnerService: NgxSpinnerService" .
+		Add the busy() method.
+		Add the idle() method.
+	In the interceptors folder (terminal)
+		Create an interceptor called loading. i.e "ng g interceptor loading --skip-tests" .
+	In the loading.interceptor.ts
+		Inject the busy service into the contructor. i.e "private busyService: BusyService" .
+		In the intercept method add the busyService code. Remember to change the types of the interceptor formal parameters from "unknown" to "any".
+	In the error.interceptor.ts
+		Remove the delay. i.e "delay(1000)," .
+	In the app.module.ts
+		In the "providers" array, add "{ provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true }" .
+
+131. Cleaning up loading issues
+	In the shop.component.html
+		Wrap the sort, brands and type in a ng-container tag. The ng-container tag doesn't affect the styling.
+		Add an ngIf to the ng-container.
+	Test in browser.
+	In the shop.component.html
+		Add a ngIf to the search. Then test in browser. (error will shop up in the console when you use the search facility).
+	In the shop.component.ts
+		Modify the searchTerm property, change the static to false. Test in the search facility. Should be working now.
+	In the product-details.component.ts
+		In the constructor body add "this.bcService.set('@productDetails', ' ');" . Test in browser. When refreshing, the product number must not show.
+	In the product-details.component.html
+		Create a div container with margin top 5, copy the rest of the code into the container. Test in browser.
+		Add style to the currency to make it bigger.
+
+132. Adding the home page content
+	In the shared.module.ts
+		In the "imports" array, add "CarouselModule.forRoot()". The import for this is "import { CarouselModule } from 'ngx-bootstrap/carousel';" .
+		In the "exports" array, add "CarouselModule" .
+	In the home.module.ts
+		In the "imports" array, add "SharedModule" .
+	In the home.component.html
+		Add the carousel tag and code... .
+	In the home.component.scss
+		Add code.
+	In the app.component.html, remove the container class covering the router-outlet.
+	In the shop.component.html
+		Update the margin spacing.
+
+SECTION 13 - API - BASKET
+
+134. Introduction
+	A basket is client side state.
+	In-memory data structure store.
+	Redis is used for caching.
+	
+135. Setting up Redis
+	Install the "StackExchange.Redis" package using Nuget gallery. Install this in the Infrastructure project. **NOTE** USE THE "dotnet restore" command after installing any package. Use it untill all projects are restored.
+	In the Startup.cs class
+		In the ConfigureServices method, add "services.AddSingleton<ConnectionMultiplexer>..." .
+	In the appsettings.Development.json
+		In the "ConnectionStrings" , add "Redis": "localhost" .
+
+136. Setting up the basket class
+	In the Entities folder
+		Create a class called "CustomerBasket". Add code.
+		Create a class called "BasketItem". Add code.
+
+137. Creating a basket repository (For Redis not entity framework)
+	In the Interface folder
+		Create an interface called "IBasketRepository" .
+	In the Data folder
+		Create a class called "BasketRepository". Implement the IBasketRepository interface.
+	In the ApplicationServicesExtensions.cs class
+		Add "services.AddScoped<IBasketRepository, BasketRepository>();" .
+
+138. Implementing the basket repository
+	In the BasketRepository class 
+		Implement the IBasketRepository interface.
+		Write the code for all the methods.
+
+139. Adding the basket controller
+	In the controllers folder, create a class called "BasketController" which inherits from the BaseApiController
+	In the BasketController
+		Add two httpGet methods and an httpDelete method.
+
+142. Installing Redis on Windows
+	Go to Chocolatey.org (Used to install packages, eg redis)
+	Install Chocolatey.
+	In the Chocolatey website, search for Redis. Choose the popular one.
+	**Start with the following option not the one above.
+	**Note** if that doesn't work
+		go to this link "https://github.com/microsoftarchive/redis/releases/tag/win-3.0.504" .
+			Install Redis-x64-3.0.504.msi
+	Open a command prompt and enter "redis-server"
+	Open another command prompt and enter "redis-cli ping". If you get a response "pong" , the server is running.
+	Go to "https://redislabs.com/blog/redis-on-windows-8-1-and-previous-versions/" . If you need more help.
+	To view the keys use "redis-cli KEYS * " .
+	To show the value of the key use "redis-cli GET <keyvalue>".
+	Note: if you type in "redis-cli" then you will see "127.0.0.1:6379>". Then you can use the above commands without "redis-cli".
+	To exit the redis server cli use "quit".
+	To stop the server use "shutdown".
+	To start the redis server use "redis-server".
+
+143. Testing the basket functionality
+	Make sure redis is running.
+	Open postman and send requests to test.
+	Will get an error when you use dotnet run command.
+	To resolve the error
+		In the Startup class, in the ConfigureServices method, look for "services.AddSingleton<ConnectionMultiplexer>..."  and change "ConnectionMultiplexer" to "IConnectionMultiplexer".
+	Restart dotnet watch run.
+	
+		
+	
+		
+		
+	
+	 
+
+		
+
+		
+		
+	
+	
+
+
+			
+		
+
+	
+	
+
+	
