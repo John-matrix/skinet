@@ -1,0 +1,7 @@
+Test Challenges for jobs. (Things that I need to make sure I do).
+
+1. Build a simple log in page (front end) that communicates with a simple api (backend). It also has client side validation.
+If the inputs (username and password) are not correct then error messages will appear under the inputs.
+
+2. Build a an app that can you can fill out a form and submit that to the api. The api must submit that form to the database.
+JWT tokens must be used.

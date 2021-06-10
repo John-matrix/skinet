@@ -1060,8 +1060,191 @@ SECTION 13 - API - BASKET
 	To resolve the error
 		In the Startup class, in the ConfigureServices method, look for "services.AddSingleton<ConnectionMultiplexer>..."  and change "ConnectionMultiplexer" to "IConnectionMultiplexer".
 	Restart dotnet watch run.
+
+SECTION 14 - CLIENT - BASKET
+
+145. Introduction
 	
+146. Creating the basket module
+	In the app folder
+		Create a module called basket using "ng g m basket" .
+	In the basket folder
+		Create a module called basket-routing using "ng g m basket-routing --flat" . (this is for angular lazy loading).
+		Create a component called basket. Use "ng g c basket --flat --skip-tests" .
+		Create a service called basket. Use "ng g s basket --flat --skip-tests" .
+	In the app-routing.module.ts
+		In the routes array add "{ path: "basket", loadChildren: () => import('./basket/basket.module').then(mod => mod.BasketModule), data: { breadcumb: "Basket" } }," .
+	In the basket-routing.module.ts
+		Add an array called "routes" of type Routes. 
+		In the routes array add "{ path: '', component: BasketComponent }" .
+		In the "imports" array add "RouterModule.forChild(routes)".
+		Add the "exports" array.
+		In the "exports" array add "RouterModule" .
+	In the basket.module.ts
+		In the "imports" array add "BasketRoutingModule" .
+	In the nav-bar.component.html
+		In the a tag for the cart, add "routerLink="/basket"" .
+	Test in browser.
+
+147. Creating the basket types
+	Use Swagger UI to get information for creating interfaces.
+		Copy the example value and then convert it to typescript.
+	In the models folder
+		Create a file called basket.ts, paste the typescript code in there and modify it.
+		In the basket.ts
+			Add a class called Basket which implements the IBasket interface.
+	In the client folder (terminal)
+		type in "npm install uuid" . (Use this package to generate the unique ids for the baskets)
+	In the basket.ts file
+		At the top add "import { v4 as uuidv4 } from 'uuid';" . (*Do this for uuid v4 or higher).
+		In the basket class modify the id property to this "id = uuidv4();" .
+			
+148. Basket service methods
+	In the basket.service.ts
+		Add a property called "baseUrl".
+		Inject the HttpClient into the constructor.
+		Add a property called basketSource. i.e Add "private basketSource = new BehaviorSubject<IBasket>(null);" . (BehaviorSubject is an observable which emits the value it contains to whatever is subscribed to it).
+		Add a property called "basket$". i.e Add "basket$ = this.basketSource.asObservable();" .
+		Add the "getBasket" method.
+		Add the "setBasket" method.
+		Add the "getCurrentBasketValue" method.
+
+149. Adding an item to the basket service method
+	In the basket.service.ts
+		Add the "addItemToBasket" method.
+		Add the "mapProductItemToBasketItem" method.
+		Add the "createBasket" method. (the line "localStorage.setItem('basket_id', basket.id);" stores the basket id in the local storage in the browser).
+		Add the "addOrUpdateItem method".
+
+150. Adding the add item to basket in the component method
+	In the basket.service.ts
+		In the setBasket method, in the post section add "console.log(response);".
+	In the product-item.component.ts
+		Inject the basket service into the constructor. i.e "private basketService: BasketService" .
+		Add the "addItemToBasket" method.
+	In the product-item.component.html
+		In the button for the shopping cart, add "(click)="addItemToBasket()"" .
+	Test in browser. May get an error like "undefined..." . Add console.log when needed so see what is going on.
+	In the basket.ts file
+		in the basket class, initialize the array with an empty array. i.e "items: IBasketItem[] = [];" .
+	Test in browser. Error should be gone. Check the console for any errors. Check the Application local storage for basket_id.
+
+151. Persisting the basket on startup
+	A good place to do any initialization is in the root component for the application, that is the app.component.ts (this is to persist the basket id)
+	In the app.component.ts
+		Inject the basketService into the constructor
+		In the ngOnInit method, add "const basketId = localStorage.getItem('basket_id');" , add more code... . 
+	In the basket.service.ts
+		In the getBasket method, in the map section add "console.log(console.log(this.getCurrentBasketValue())";
+	Test in browser. See if the basket id persists and also add two of the same items to see the quantity change.
+
+152. Displaying the basket item count in the nav bar
+	In the nav-bar.component.ts
+		Inject the basket service into the constructor. i.e "private basketService: BasketService" . 
+		Add the "basket$" property. i.e "basket$: Observable<IBasket>;" .
+		In the ngOnInit method add "this.basket$ = this.basketService.basket$;" .
+	In the nav-bar.component.html
+		Modify the div with the cart-no class to this "<div *ngIf="(basket$ | async) as basket" class="cart-no">{{basket.items.length}}</div>" .
+	Check in browser. Add another item to the basket and observe the number on the basket icon change.
+	In the basket.component.ts
+		Add a property called "basket$". i.e "basket$: Observable<IBasket>;" .
+		Inject the basket service into the constructor. i.e "private basketService: BasketService" .
+		In the ngOnInit method add "this.basket$ = this.basketService.basket$" .
+	In the basket.component.html
+		Add code.
+		Add "*ngIf="(basket$ | async) as basket" . The as basket means that now you can use the basket for things like basket.items, etc...
+		The above code is just to display the item.productName and the item.quantity.
+	Check in browser.
+
+153. Styling the basket page
+	In the basket.component.html
+		Add html to style the component.
+
+154. Adding the basket totals to the service
+	In the basket.ts
+		Add the interface "IBasketTotals".
+	In the basket.service.ts
+		Add a property called "basketTotalSource" . I.e "private basketTotalSource = new BehaviorSubject<IBasketTotals>(null);"
+		Add a property called "basketTotal$" . i.e "basketTotal$ = this.basketTotalSource.asObservable();" .
+		Add a method called "calculateTotals" .
+		In the getBasket method, in the map section, add "this.calculateTotals();" .
+		In the setBasket method, in the post section, add "this.calculateTotals();" .
+	
+155. Creating the order summary component
+	In the components folder (terminal). I.e in the shared folder.
+		Create a new component called "order-totals" . i.e "ng g c order-totals --skip-tests" .
+	In the order-totals.component.ts
+		Add a property called "basketTotal$". i.e "basketTotal$: Observable<IBasketTotals>;" .
+		Inject the basket service into the constructor. i.e "private basketService: BasketService" .
+		In the ngOnInit method, "this.basketTotal$ = this.basketService.basketTotal$;" .
+	In the order-totals.component.html
+		Add code.
+		Remember to use "*ngIf="(basketTotal$ | async) as totals"" .
+	In the shared.module.ts
+		In the "exports" array add "OrderTotalsComponent" .
+	In the basket.module.ts
+		In the "imports" array add "SharedModule".
+	In the basket.component.html
+		Add the "<app-order-totals></app-order-totals>" tag.
+		Add code.
+
+156. Adding the increment and decrement functionality
+	In the basket.service.ts
+		Add the "incrementItemQuantity" method .
+		Add the "decrementItemQuantity" method .
+		Add the "removeItemFromBasket" method .
+		Add the "deleteBasket" method.
+
+157. Adding the basket component functions
+	In the basket.component.ts
+		Add the "removeBasketItem" method.
+		Add the "incrementItemQuality" method.
+		Add the "decrementItemQuality" method.
+	In the basket.component.html
+		Add code. (the above methods to buttons).
+	Test in browser.
+
+158. Hooking up the product detail component to the basket
+	In the product-details.component.ts
+		Add the a property called "quantity". i.e "quantity = 1" .
+		Inject the basket service into the constructor. i.e "private basketService: BasketService" .
+		Add the "addItemToBasket" method.
+		Add the "incrementQuantity" method.
+		Add the "decrementQuantity" method.
+	In the product-details.component.html
+		Add code. (add click events).
+
+159. Adding the checkout module
+	We will be adding a the feature checkout module
+	In the app folder (terminal)
+		Create a module called "checkout" . i.e "ng g m checkout " .
+	In the checkout folder (terminal)
+		Create a module called "checkout-routing". i.e "ng g m checkout-routing --flat" .
+		Create a service called "checkout" . i.e "ng g s checkout --flat --skip-tests" .
+		Create a component called "checkout" . i.e "ng g c checkout --flat --skip-tests" .
+	In the checkout-routing.module.ts
+		Create an array called "routes".
+		In the "routes" array add "{ path: '', component: CheckoutComponent }" .
+		In the "imports" array add "RouterModule.forChild(routes)" .
+		Add the "exports" array.
+		In the "exports" array add "RouterModule" .
+	In the checkout.module.ts
+		In the "imports" array add "CheckoutRoutingModule" .
+	In the app-routing.module.ts
+		In the "routes" array add "{ path: "checkout", loadChildren: () => import('./checkout/checkout.module').then(mod => mod.CheckoutModule), data: { breadcrumb: "Checkout" } }," .
+	In the basket.component.html
+		Add code. (routerLink for the checkout component).
+	Test in browser.
+	In the checkout.component.html
+		Add a div and a h1 tag.
+	In the .gitignore file
+		Add "*.rdb" . (first check in the source control changes if it is there).
+		**Note** in the skinet folder (terminal), you can use "git rm dump.rdb" to remove the dumb.rdb file from source control.
+ 
 		
+		
+		
+	
 	
 		
 		
